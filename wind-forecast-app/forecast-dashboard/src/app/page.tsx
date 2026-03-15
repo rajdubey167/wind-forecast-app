@@ -3,22 +3,19 @@
 import { useState, useEffect } from "react";
 import { format, parseISO, isAfter, isBefore } from "date-fns";
 import {
-  AreaChart,
   Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
-  ReferenceLine,
   ComposedChart,
   Line,
 } from "recharts";
 import { Slider } from "@/components/ui/slider";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Zap, Target, BarChart3, Clock, TrendingUp, TrendingDown, RefreshCcw, Calendar } from "lucide-react";
+import { Zap, BarChart3, Clock, TrendingUp, RefreshCcw } from "lucide-react";
 
 type ProcessedData = {
   actuals: Record<string, number>;
@@ -32,8 +29,6 @@ type ProcessedData = {
 
 export default function Dashboard() {
   const [data, setData] = useState<ProcessedData | null>(null);
-
-  // Controls state
   const [horizon, setHorizon] = useState<number>(4);
   const [startDateStr, setStartDateStr] = useState<string>("2024-01-24T00:00");
   const [endDateStr, setEndDateStr] = useState<string>("2024-01-26T00:00");
@@ -76,88 +71,91 @@ export default function Dashboard() {
     );
     eligibleForecasts.sort((a, b) => a.horizon - b.horizon);
     const forecastValue = eligibleForecasts.length > 0 ? eligibleForecasts[0].generation : null;
-
     return {
       time: timeStr,
       formattedTime: format(parseISO(timeStr), "dd/MM HH:mm"),
       actual: actualValue,
       forecast: forecastValue,
-      // For the deviation band area
       band: (actualValue !== null && forecastValue !== null) ? [actualValue, forecastValue] : null,
       deviation: (actualValue !== null && forecastValue !== null) ? Math.abs(forecastValue - actualValue) : 0
     };
   });
 
-  // Calculate KPIs
   const validActuals = chartData.filter(d => d.actual !== null).map(d => d.actual as number);
   const currentOutput = validActuals.length > 0 ? validActuals[validActuals.length - 1] : 0;
   const peakForecast = Math.max(...chartData.map(d => d.forecast || 0));
-
   const deviations = chartData
     .filter(d => d.actual !== null && d.forecast !== null)
     .map(d => Math.abs((d.forecast || 0) - (d.actual || 0)));
   const avgDeviation = deviations.length > 0 ? deviations.reduce((a, b) => a + b, 0) / deviations.length : 0;
-  const avgDevPct = validActuals.reduce((a, b) => a + b, 0) > 0 ? (avgDeviation / (validActuals.reduce((a, b) => a + b, 0) / validActuals.length)) * 100 : 0;
+  const avgDevPct = validActuals.reduce((a, b) => a + b, 0) > 0
+    ? (avgDeviation / (validActuals.reduce((a, b) => a + b, 0) / validActuals.length)) * 100
+    : 0;
+
+  const kpis = [
+    { label: "Current Output", value: `${currentOutput.toLocaleString()} MW`, icon: Zap, color: "text-cyan-400", accentFrom: "from-cyan-500", accentTo: "to-cyan-500/0", sub: "", trend: true },
+    { label: "Peak Forecast", value: `${peakForecast.toLocaleString()} MW`, icon: TrendingUp, color: "text-amber-400", accentFrom: "from-amber-500", accentTo: "to-amber-500/0", sub: "25/01 14:30", hasDot: true },
+    { label: "Avg Deviation", value: `± ${avgDevPct.toFixed(1)} %`, icon: BarChart3, color: "text-emerald-400", accentFrom: "from-emerald-500", accentTo: "to-emerald-500/0", sub: "+450 MW | -120 MW" },
+    { label: "Horizon", value: `${horizon} hours`, icon: Clock, color: "text-violet-400", accentFrom: "from-violet-500", accentTo: "to-violet-500/0", sub: "Next Update in 00:02:34", hasDot: true },
+  ];
 
   return (
-    <div className="h-screen bg-[#0B0D11] text-slate-300 font-sans p-4 lg:p-6 flex flex-col overflow-hidden">
-      <div className="max-w-[1700px] mx-auto w-full flex flex-col flex-1 min-h-0">
+    /*
+     * Desktop: h-screen overflow-hidden — classic no-scroll terminal look
+     * Mobile:  min-h-screen overflow-y-auto — content scrolls naturally
+     */
+    <div className="min-h-screen overflow-y-auto lg:h-screen lg:overflow-hidden bg-[#0B0D11] text-slate-300 font-sans p-4 lg:p-6 flex flex-col">
+      <div className="max-w-[1700px] mx-auto w-full flex flex-col gap-4 lg:flex-1 lg:min-h-0">
 
-        {/* GLOBAL HEADER */}
-        <header className="px-2 mb-4 flex-shrink-0">
-          <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tighter text-white">
+        {/* HEADER */}
+        <header className="px-2 flex-shrink-0">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tighter text-white">
             Wind Power Control Terminal
           </h1>
           <p className="text-slate-500 font-sans text-[11px] mt-1">
-            UK Wind Power Forecast Dashboard | Energy Monitoring & Analysis
+            UK Wind Power Forecast Dashboard | Energy Monitoring &amp; Analysis
           </p>
         </header>
 
-        {/* MAIN LAYOUT: TWO COLUMNS */}
-        <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+        {/* MAIN LAYOUT */}
+        <div className="flex flex-col lg:flex-row gap-4 lg:flex-1 lg:min-h-0">
 
-          {/* LEFT SIDEBAR: Controls */}
+          {/* SIDEBAR */}
           <div className="w-full lg:w-[280px] flex-shrink-0 flex flex-col gap-4">
 
-            {/* Time Range Panel */}
+            {/* Time Range */}
             <div className="bg-[#14171C] border border-white/5 rounded-2xl p-5 shadow-2xl relative overflow-hidden group">
               <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500/50 group-hover:bg-cyan-400 transition-colors"></div>
-              <h2 className="text-sm font-sans font-semibold text-white tracking-wide mb-4">
-                Time Range
-              </h2>
-              <div className="space-y-4">
-                <div className="flex flex-col gap-1.5 relative group/input">
-                  <span className="text-[10px] font-mono text-slate-500 uppercase z-10">START TIME:</span>
+              <h2 className="text-sm font-semibold text-white tracking-wide mb-4">Time Range</h2>
+              <div className="flex flex-col gap-4 pr-3">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-mono text-slate-500 uppercase">START TIME:</span>
                   <Input
                     type="datetime-local"
                     value={startDateStr}
                     onChange={(e) => setStartDateStr(e.target.value)}
-                    className="bg-gradient-to-r from-white/10 to-transparent border-white/10 text-slate-200 h-9 focus:ring-cyan-500/50 focus:border-cyan-400 font-mono text-[12px] px-3 transition-all rounded-md shadow-inner"
+                    className="bg-white/10 border-white/10 text-slate-200 h-9 font-mono text-[12px] px-3 rounded-md w-full"
                   />
                 </div>
-                <div className="flex flex-col gap-1.5 relative group/input">
-                  <span className="text-[10px] font-mono text-slate-500 uppercase z-10">END TIME:</span>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-mono text-slate-500 uppercase">END TIME:</span>
                   <Input
                     type="datetime-local"
                     value={endDateStr}
                     onChange={(e) => setEndDateStr(e.target.value)}
-                    className="bg-gradient-to-r from-white/10 to-transparent border-white/10 text-slate-200 h-9 focus:ring-cyan-500/50 focus:border-cyan-400 font-mono text-[12px] px-3 transition-all rounded-md shadow-inner"
+                    className="bg-white/10 border-white/10 text-slate-200 h-9 font-mono text-[12px] px-3 rounded-md w-full"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Horizon Panel */}
+            {/* Horizon */}
             <div className="bg-[#14171C] border border-white/5 rounded-2xl p-5 shadow-2xl relative overflow-hidden group">
-              <h2 className="text-sm font-sans font-semibold text-white tracking-wide mb-1">
-                Horizon
-              </h2>
-              <p className="text-[11px] font-sans text-slate-400 mb-4 leading-relaxed pr-4">
+              <h2 className="text-sm font-semibold text-white tracking-wide mb-1">Horizon</h2>
+              <p className="text-[11px] text-slate-400 mb-4 leading-relaxed pr-4">
                 Shows the latest forecast made at least {horizon} hours before target.
               </p>
-
               <div className="pt-6 pb-1 px-2 relative">
-                {/* Floating hour tooltip above thumb */}
                 <div
                   className="absolute -top-[10px] pointer-events-none z-10"
                   style={{ left: `calc(${(horizon / 48) * 100}% - 12px)` }}
@@ -166,7 +164,6 @@ export default function Dashboard() {
                     {horizon}h
                   </span>
                 </div>
-                {/* Glowing glow thumb */}
                 <div
                   className="absolute top-[20px] w-6 h-6 rounded-full bg-cyan-400/20 blur-md pointer-events-none"
                   style={{ left: `calc(${(horizon / 48) * 100}% - 4px)` }}
@@ -190,22 +187,14 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* RIGHT CONTENT: Metrics & Chart */}
-          <div className="flex-grow flex flex-col gap-4 min-h-0">
+          {/* RIGHT CONTENT */}
+          <div className="flex-grow flex flex-col gap-4 lg:min-h-0">
 
-            {/* Metrics Row */}
+            {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 flex-shrink-0">
-              {[
-                { label: "Current Output", value: `${currentOutput.toLocaleString()} MW`, icon: Zap, color: "text-cyan-400", accentFrom: "from-cyan-500", accentTo: "to-cyan-500/0", sub: "", trend: true },
-                { label: "Peak Forecast", value: `${peakForecast.toLocaleString()} MW`, icon: TrendingUp, color: "text-amber-400", accentFrom: "from-amber-500", accentTo: "to-amber-500/0", sub: "25/01 14:30", hasDot: true },
-                { label: "Avg Deviation", value: `± ${avgDevPct.toFixed(1)} %`, icon: BarChart3, color: "text-emerald-400", accentFrom: "from-emerald-500", accentTo: "to-emerald-500/0", sub: `+450 MW | -120 MW` },
-                { label: "Horizon", value: `${horizon} hours`, icon: Clock, color: "text-violet-400", accentFrom: "from-violet-500", accentTo: "to-violet-500/0", sub: "Next Update in 00:02:34", hasDot: true },
-              ].map((kpi, i) => (
-                <div key={i} className="bg-[#14171C]/80 border border-white/5 rounded-[12px] px-4 py-3 hover:border-white/10 transition-all shadow-lg flex flex-col justify-between h-[86px] relative overflow-hidden group">
-                  {/* Gradient left accent */}
+              {kpis.map((kpi, i) => (
+                <div key={i} className="bg-[#14171C]/80 border border-white/5 rounded-[12px] px-4 py-3 hover:border-white/10 transition-all shadow-lg flex flex-col gap-2 lg:justify-between lg:gap-0 h-auto lg:h-[86px] relative overflow-hidden group">
                   <div className={`absolute top-0 left-0 w-[3px] h-full bg-gradient-to-b ${kpi.accentFrom} ${kpi.accentTo} opacity-60 group-hover:opacity-100 transition-opacity`}></div>
-                  
-                  {/* Top row: icon + trend/dots */}
                   <div className="flex items-center justify-between">
                     <div className="bg-[#0B0D11] p-1.5 rounded-lg border border-white/5">
                       <kpi.icon size={14} className={kpi.color} />
@@ -219,25 +208,29 @@ export default function Dashboard() {
                       </div>
                     )}
                   </div>
-
-                  {/* Bottom row: label + value */}
                   <div>
-                    <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-0.5">{kpi.label}</div>
-                    <div className="flex items-baseline gap-2">
-                      <div className={`text-lg font-mono tracking-tight font-bold ${kpi.color}`}>{kpi.value}</div>
-                      {kpi.sub && <div className="text-[9px] font-mono text-slate-600">{kpi.sub}</div>}
+                    <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-0.5 truncate">{kpi.label}</div>
+                    <div className="flex items-baseline gap-2 overflow-hidden">
+                      <div className={`text-lg font-mono tracking-tight font-bold ${kpi.color} truncate`}>{kpi.value}</div>
+                      {kpi.sub && <div className="text-[9px] font-mono text-slate-600 truncate flex-shrink-0 hidden sm:block lg:hidden xl:block">{kpi.sub}</div>}
                     </div>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Chart */}
-            <Card className="flex-1 min-h-0 bg-[#14171C]/40 border-white/5 rounded-2xl p-4 lg:p-6 shadow-2xl relative overflow-hidden flex flex-col">
+            {/* Chart Card */}
+            {/*
+             * Desktop: flex-1 min-h-0 — fills remaining vertical space, no scroll
+             * Mobile:  auto height with explicit chart div height below
+             */}
+            <Card className="lg:flex-1 lg:min-h-0 bg-[#14171C]/40 border-white/5 rounded-2xl p-4 lg:p-6 shadow-2xl relative overflow-hidden flex flex-col">
               <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent"></div>
+
+              {/* Chart header */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 flex-shrink-0">
                 <div>
-                  <CardTitle className="text-xl text-white tracking-tight flex items-center gap-3">
+                  <CardTitle className="text-base sm:text-xl text-white tracking-tight flex flex-wrap items-center gap-2">
                     Wind Power Forecast (MW)
                     <span className="inline-flex items-center rounded-full bg-cyan-500/10 px-2 py-0.5 text-[10px] font-medium text-cyan-400 border border-cyan-500/20 uppercase tracking-widest">
                       Real-time Stream
@@ -245,19 +238,23 @@ export default function Dashboard() {
                   </CardTitle>
                   <div className="text-[10px] font-mono text-slate-500 mt-1 uppercase">Generation (MW) vs Settlement Window</div>
                 </div>
-                <div className="flex items-center gap-6 px-4 py-2 bg-[#0B0D11]/50 rounded-xl border border-white/5">
+                <div className="flex items-center gap-4 px-3 py-2 bg-[#0B0D11]/50 rounded-xl border border-white/5 flex-shrink-0">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-cyan-500 rounded-sm"></div>
                     <span className="text-[10px] font-mono uppercase text-slate-400">Actual</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-[2px] bg-emerald-500 border-dashed border-emerald-500"></div>
+                    <div className="w-3 h-[2px] bg-emerald-500"></div>
                     <span className="text-[10px] font-mono uppercase text-slate-400">Forecast</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex-1 min-h-0 w-full">
+              {/*
+               * Desktop: flex-1 min-h-0 fills the card's remaining height
+               * Mobile: fixed pixel height so ResponsiveContainer has a concrete size
+               */}
+              <div className="h-[280px] sm:h-[360px] lg:flex-1 lg:min-h-0 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
@@ -273,18 +270,19 @@ export default function Dashboard() {
                     <CartesianGrid strokeDasharray="1 1" vertical={true} stroke="rgba(255,255,255,0.03)" />
                     <XAxis
                       dataKey="formattedTime"
-                      minTickGap={80}
-                      tick={{ fontSize: 10, fill: '#64748b', fontFamily: 'var(--font-mono)' }}
+                      minTickGap={60}
+                      tick={{ fontSize: 9, fill: '#64748b', fontFamily: 'var(--font-mono)' }}
                       axisLine={{ stroke: 'rgba(255,255,255,0.05)' }}
                       tickLine={false}
                     />
                     <YAxis
-                      tick={{ fontSize: 10, fill: '#64748b', fontFamily: 'var(--font-mono)' }}
+                      tick={{ fontSize: 9, fill: '#64748b', fontFamily: 'var(--font-mono)' }}
                       tickFormatter={(val) => `${(val / 1000).toFixed(0)}K`}
                       axisLine={false}
                       tickLine={false}
                       domain={['auto', 'auto']}
-                      dx={-10}
+                      dx={-6}
+                      width={30}
                     />
                     <Tooltip
                       contentStyle={{
@@ -305,13 +303,12 @@ export default function Dashboard() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="text-[8px] font-mono text-slate-700 uppercase tracking-widest mt-2 lg:absolute lg:bottom-4 lg:right-8 text-center sm:text-right">
+              <div className="text-[8px] font-mono text-slate-700 uppercase tracking-widest mt-2 text-center sm:text-right lg:absolute lg:bottom-4 lg:right-8">
                 Secure Transmission Link: Operational | Elexon BMRS Insights v1.2
               </div>
             </Card>
           </div>
         </div>
-
       </div>
     </div>
   );

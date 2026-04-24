@@ -34,6 +34,7 @@ export default function TerminalBootScreen() {
         setTimeout(() => {
           setBooted(true);
           sessionStorage.setItem("terminal_booted", "true");
+          window.dispatchEvent(new CustomEvent("terminal_boot_complete"));
           setTimeout(() => setVisible(false), 800); // Wait for fade out transition
         }, 1500); // Hold for 1.5 seconds so user can read
       }

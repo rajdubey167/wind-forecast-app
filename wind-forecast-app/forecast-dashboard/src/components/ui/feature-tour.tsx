@@ -70,6 +70,13 @@ export default function FeatureTour() {
   } | null>(null);
   const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [bootComplete, setBootComplete] = useState(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("terminal_booted") === "true";
+    }
+    return false;
+  });
+  const [readyToShow, setReadyToShow] = useState(false);
 
   const steps = useMemo(() => {
     if (pathname === "/") return DASHBOARD_STEPS;
@@ -78,14 +85,30 @@ export default function FeatureTour() {
   }, [pathname]);
 
   const isOpen = useMemo(() => {
-    if (!isClient || dismissed || !steps.length) return false;
+    if (!isClient || dismissed || !steps.length || !bootComplete || !readyToShow) return false;
     return localStorage.getItem(TOUR_KEY) !== "true";
-  }, [dismissed, isClient, steps]);
+  }, [dismissed, isClient, steps, bootComplete, readyToShow]);
 
   const clearOverlay = useCallback(() => {
     setHighlight(null);
     setPanelPos(null);
   }, []);
+
+  useEffect(() => {
+    // If we've already booted in this session, still wait 1s for the page to "settle"
+    if (bootComplete) {
+      const timer = setTimeout(() => setReadyToShow(true), 1000);
+      return () => clearTimeout(timer);
+    }
+
+    const handleBoot = () => {
+      setBootComplete(true);
+      setTimeout(() => setReadyToShow(true), 1000); // 1s delay after boot finishes
+    };
+
+    window.addEventListener("terminal_boot_complete", handleBoot);
+    return () => window.removeEventListener("terminal_boot_complete", handleBoot);
+  }, [bootComplete]);
 
   useEffect(() => {
     const syncMobile = () => setIsMobile(window.innerWidth < 768);

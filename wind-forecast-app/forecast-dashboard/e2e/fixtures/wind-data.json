@@ -1,0 +1,28 @@
+{
+  "actuals": {
+    "2024-01-25T00:00:00Z": 1000,
+    "2024-01-25T00:30:00Z": 1200,
+    "2024-01-25T01:00:00Z": 1100
+  },
+  "forecasts": [
+    {
+      "targetTime": "2024-01-25T00:00:00Z",
+      "publishTime": "2024-01-24T20:00:00Z",
+      "horizon": 4,
+      "generation": 1500
+    },
+    {
+      "targetTime": "2024-01-25T00:30:00Z",
+      "publishTime": "2024-01-24T20:30:00Z",
+      "horizon": 4,
+      "generation": 1600
+    },
+    {
+      "targetTime": "2024-01-25T01:00:00Z",
+      "publishTime": "2024-01-24T21:00:00Z",
+      "horizon": 4,
+      "generation": 1400
+    }
+  ]
+}
+

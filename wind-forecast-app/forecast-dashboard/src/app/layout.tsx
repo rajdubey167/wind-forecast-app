@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
+import { Geist, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import TerminalBootScreen from "@/components/ui/terminal-boot";
+import FeatureTour from "@/components/ui/feature-tour";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -28,6 +30,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${jetbrainsMono.variable} font-sans antialiased bg-[#0B0D11] text-slate-200`}
         suppressHydrationWarning
       >
+        <TerminalBootScreen />
+        <FeatureTour />
         {children}
       </body>
     </html>

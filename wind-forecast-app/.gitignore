@@ -48,6 +48,22 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Frontend build/test artifacts
+forecast-dashboard/.next/
+forecast-dashboard/out/
+forecast-dashboard/build/
+forecast-dashboard/coverage/
+forecast-dashboard/test-results/
+forecast-dashboard/playwright-report/
+forecast-dashboard/.turbo/
+forecast-dashboard/.vercel/
+forecast-dashboard/next-env.d.ts
+forecast-dashboard/*.tsbuildinfo
+forecast-dashboard/forecast-dashboard.log
+
+# Frontend local env files
+forecast-dashboard/.env*
+
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -62,3 +78,4 @@ Analysis.html
 # We want to ignore raw data, but keep the processed data if it's stored here instead of public/
 data/*_raw.json
 data/*.xml
+forecast-dashboard/forecast-dashboard/build_log.txt

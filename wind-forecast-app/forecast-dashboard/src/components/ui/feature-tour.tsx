@@ -14,23 +14,23 @@ const TOUR_KEY = "wind_feature_tour_v1_done";
 const DASHBOARD_STEPS: TourStep[] = [
   {
     selector: '[data-tour="source-toggle"]',
-    title: "Data Source Switch",
-    body: "Switch between the bundled static dataset and live BMRS data stream.",
+    title: "Static vs Live Data",
+    body: "Static uses a bundled January 2024 UK wind snapshot — always available, no API needed. Live connects to the Elexon BMRS API and shows real generation data for the window you choose.",
   },
   {
     selector: '[data-tour="time-range"]',
-    title: "Time Range Controls",
-    body: "Adjust start/end times and presets to control what appears in charts and KPIs.",
+    title: "Time Window",
+    body: "Pick how far back to look. Shorter windows show fine-grained 30-minute detail; longer windows let you spot weekly patterns. Use the presets or set a custom start/end.",
   },
   {
     selector: '[data-tour="horizon"]',
     title: "Forecast Horizon",
-    body: "Move the horizon slider to compare short vs long lead-time forecast behavior.",
+    body: "The horizon is how far ahead the forecast was made. A 1-hour forecast is very accurate; a 48-hour forecast has much more uncertainty. Drag the slider to see how predictive skill degrades with lead time.",
   },
   {
     selector: '[data-tour="analysis-link"]',
-    title: "Analysis View",
-    body: "Open the Analysis page for deeper error metrics, distributions, and correlation views.",
+    title: "Deeper Analysis",
+    body: "The Analysis page breaks down where and why the forecast misses — by horizon, by hour of day, and with a full error distribution. That's where you learn about the model's systematic biases.",
   },
 ];
 
@@ -38,17 +38,17 @@ const ANALYSIS_STEPS: TourStep[] = [
   {
     selector: '[data-tour="analysis-source"]',
     title: "Analysis Source",
-    body: "Choose static analysis or live BMRS analysis for a specific date window.",
+    body: "Static mode analyses the bundled January 2024 dataset — fast and always available. Live BMRS mode fetches real Elexon data for any date range you set (up to 31 days).",
   },
   {
     selector: '[data-tour="analysis-date-form"]',
-    title: "Apply Date Window",
-    body: "Set a date range and click Apply Dates to recompute KPIs and charts for that window.",
+    title: "Date Window (Live only)",
+    body: "Pick a start and end date then click Apply — the KPIs and all four charts will recompute for that window. Useful for comparing error behaviour across different seasons or weather patterns.",
   },
   {
     selector: '[data-tour="analysis-refresh"]',
     title: "Refresh Live",
-    body: "Refresh Live reloads the currently applied live date window without changing your draft edits.",
+    body: "Pulls fresh data for the currently applied window without resetting your date inputs — handy when monitoring live generation in near-real-time.",
   },
 ];
 

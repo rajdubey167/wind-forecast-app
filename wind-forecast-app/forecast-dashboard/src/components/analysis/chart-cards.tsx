@@ -117,6 +117,39 @@ export const HourChartCard = memo(function HourChartCard({
   );
 });
 
+export type RegimeDatum = {
+  regime: string;
+  MAE: number;
+  Bias: number;
+};
+
+export const RegimeChartCard = memo(function RegimeChartCard({
+  data,
+  animationBegin = 0,
+  isAnimationActive = true,
+}: {
+  data: RegimeDatum[];
+  animationBegin?: number;
+  isAnimationActive?: boolean;
+}) {
+  return (
+    <div className="h-[320px] w-full">
+      <ResponsiveContainer width="100%" height="100%" debounce={0}>
+        <BarChart data={data} margin={{ top: 20, right: 30, bottom: 5, left: 10 }}>
+          <CartesianGrid strokeDasharray="1 1" stroke="rgba(255,255,255,0.03)" vertical={false} />
+          <XAxis dataKey="regime" tick={{ fontSize: 10, fill: "#64748b", fontFamily: "var(--font-mono)" }} axisLine={{ stroke: "rgba(255,255,255,0.05)" }} tickLine={false} />
+          <YAxis tick={{ fontSize: 9, fill: "#64748b", fontFamily: "var(--font-mono)" }} tickFormatter={(v) => `${(v / 1000).toFixed(1)}K`} axisLine={false} tickLine={false} width={35} />
+          <Tooltip cursor={{ fill: "rgba(255,255,255,0.02)" }} content={<ChartTooltip />} />
+          <Legend wrapperStyle={{ fontSize: "10px", fontFamily: "var(--font-mono)" }} />
+          <ReferenceLine y={0} stroke="rgba(255,255,255,0.2)" />
+          <Bar name="Mean Abs Error (MAE)" dataKey="MAE" fill="#06B6D4" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={isAnimationActive} animationBegin={animationBegin} animationDuration={600} animationEasing="ease-out" />
+          <Bar name="Mean Bias (Over/Under)" dataKey="Bias" fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={isAnimationActive} animationBegin={animationBegin} animationDuration={600} animationEasing="ease-out" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+});
+
 export const HistogramChartCard = memo(function HistogramChartCard({
   data,
   animationBegin = 0,

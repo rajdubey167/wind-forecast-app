@@ -17,7 +17,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Zap, BarChart3, Clock, TrendingUp, RefreshCcw, Layers, BarChart2, Database, Wifi, Download, AlertCircle } from "lucide-react";
+import { Zap, BarChart3, TrendingUp, RefreshCcw, Layers, BarChart2, Database, Wifi, Download, AlertCircle, Activity } from "lucide-react";
 
 type TestWindow = Window & {
   __E2E?: boolean;
@@ -84,13 +84,7 @@ function AnimatedDashKpi({ kpi, delay }: { kpi: DashKpi; delay: number }) {
             {trendText}
           </div>
         )}
-        {kpi.hasDot && (
-          <div className="flex flex-col gap-[3px]">
-            <div className="w-[3px] h-[3px] bg-slate-500 rounded-full" />
-            <div className="w-[3px] h-[3px] bg-slate-500 rounded-full" />
-            <div className="w-[3px] h-[3px] bg-slate-500 rounded-full" />
-          </div>
-        )}
+
       </div>
       <div>
         <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-0.5 truncate">{kpi.label}</div>
@@ -433,7 +427,8 @@ export default function Dashboard() {
   }, [data, startDateStr, endDateStr, debouncedHorizon, compareMode, compareLines]);
 
   /* ── KPI metrics ───────────────────────────────────── */
-  const { currentOutput, currentOutputTrendPct, peakForecast, avgDevPct, latestDevMw, latestDevPct } = useMemo(() => {
+  const UK_INSTALLED_MW = 29_000; // approx total UK wind installed capacity (NESO, 2024)
+  const { currentOutput, currentOutputTrendPct, peakForecast, avgDevPct, latestDevMw, latestDevPct, capacityFactor } = useMemo(() => {
     const validDataPoints = chartData.filter(d => d.actual != null && d.forecast != null);
     const latestValid = validDataPoints.length > 0 ? validDataPoints[validDataPoints.length - 1] : null;
     const latestDevMw = latestValid ? Math.abs((latestValid.forecast || 0) - (latestValid.actual || 0)) : 0;
@@ -450,8 +445,9 @@ export default function Dashboard() {
       .map(d => Math.abs((d.forecast || 0) - (d.actual || 0)));
     const avgDev = devs.length > 0 ? devs.reduce((a, b) => a + b, 0) / devs.length : 0;
     const meanActual = validActuals.length > 0 ? validActuals.reduce((a, b) => a + b, 0) / validActuals.length : 1;
-    return { currentOutput: co, currentOutputTrendPct, peakForecast: pf, avgDevPct: (avgDev / meanActual) * 100, latestDevMw, latestDevPct };
-  }, [chartData]);
+    const capacityFactor = co > 0 ? (co / UK_INSTALLED_MW) * 100 : 0;
+    return { currentOutput: co, currentOutputTrendPct, peakForecast: pf, avgDevPct: (avgDev / meanActual) * 100, latestDevMw, latestDevPct, capacityFactor };
+  }, [chartData, UK_INSTALLED_MW]);
 
   const latestActualTime = useMemo(() => {
     const validActuals = chartData.filter(d => d.actual != null);
@@ -461,9 +457,9 @@ export default function Dashboard() {
 
   const kpis: DashKpi[] = [
     { label: "Current Output", rawValue: currentOutput, suffix: " MW",   icon: Zap,       color: "text-cyan-400",    accentFrom: "from-cyan-500",    accentTo: "to-cyan-500/0",    trendPct: currentOutputTrendPct },
-    { label: "Peak Forecast",  rawValue: peakForecast,  suffix: " MW",   icon: TrendingUp, color: "text-amber-400",   accentFrom: "from-amber-500",   accentTo: "to-amber-500/0",   hasDot: true },
+    { label: "Peak Forecast",  rawValue: peakForecast,  suffix: " MW",   icon: TrendingUp, color: "text-amber-400",   accentFrom: "from-amber-500",   accentTo: "to-amber-500/0" },
     { label: "Avg Deviation",  rawValue: avgDevPct,     suffix: " %", prefix: "± ", decimals: 1, icon: BarChart3,  color: "text-emerald-400", accentFrom: "from-emerald-500", accentTo: "to-emerald-500/0" },
-    { label: "Horizon",        rawValue: horizon,       suffix: " hours", icon: Clock,     color: "text-violet-400",  accentFrom: "from-violet-500",  accentTo: "to-violet-500/0",  hasDot: true },
+    { label: "Capacity Factor", rawValue: capacityFactor, suffix: " %", decimals: 1, icon: Activity, color: "text-violet-400", accentFrom: "from-violet-500", accentTo: "to-violet-500/0" },
   ];
 
   const analysisHref = useMemo(() => {
@@ -492,10 +488,10 @@ export default function Dashboard() {
         <header style={{ animation: 'fadeSlideUp 0.4s ease-out both' }} className="px-2 flex-shrink-0 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tighter text-white">
-              Wind Power Control Terminal
+              UK Wind Power Monitor
             </h1>
             <p className="text-slate-500 font-sans text-[11px] mt-1">
-              UK Wind Power Forecast Dashboard | Energy Monitoring &amp; Analysis
+              UK aggregate wind generation · Elexon BMRS · Onshore &amp; Offshore
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -542,12 +538,38 @@ export default function Dashboard() {
               href={analysisHref}
               prefetch
               onMouseEnter={() => router.prefetch(analysisHref)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-slate-300 hover:bg-white/10 hover:border-cyan-500/30 transition-all font-mono"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-sm text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400/50 transition-all font-mono shadow-[0_0_15px_rgba(6,182,212,0.1)]"
+              title="View detailed forecast error analysis for the selected window"
             >
-              <BarChart2 size={14} /> Analysis
+              <BarChart2 size={14} /> View Error Analysis
             </Link>
           </div>
         </header>
+
+        {/* UK WIND CONTEXT BANNER */}
+        <div style={{ animation: 'fadeSlideUp 0.45s ease-out both', animationDelay: '50ms' }} className="flex-shrink-0 flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2.5 rounded-xl bg-[#14171C]/60 border border-white/5">
+          <span className="text-[9px] font-mono text-slate-600 uppercase tracking-widest shrink-0">UK Wind Fleet</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shrink-0" />
+            <span className="text-[11px] font-mono text-slate-300">~29 GW</span>
+            <span className="text-[10px] font-mono text-slate-500">total installed</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />
+            <span className="text-[11px] font-mono text-slate-300">~16 GW</span>
+            <span className="text-[10px] font-mono text-slate-500">offshore</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+            <span className="text-[11px] font-mono text-slate-300">~14 GW</span>
+            <span className="text-[10px] font-mono text-slate-500">onshore</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+            <span className="text-[11px] font-mono text-slate-300">~28%</span>
+            <span className="text-[10px] font-mono text-slate-500">of national mix (2024 avg)</span>
+          </div>
+        </div>
 
         {/* ERROR BANNER */}
         {error && (
@@ -590,8 +612,13 @@ export default function Dashboard() {
         {/* MAIN LAYOUT */}
         <div className="flex flex-col lg:flex-row gap-4 lg:flex-1 lg:min-h-0">
 
-          {/* SIDEBAR */}
+          {/* SIDEBAR (Inputs) */}
           <div className="w-full lg:w-[280px] flex-shrink-0 flex flex-col gap-4 lg:overflow-y-auto lg:min-h-0 lg:pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
+
+            <div className="flex items-center gap-2 px-2 pt-1">
+              <Layers size={14} className="text-slate-500" />
+              <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">Input Controls</span>
+            </div>
 
             {/* Time Range */}
             <div data-tour="time-range" style={{ animation: 'fadeSlideUp 0.5s ease-out both', animationDelay: '0ms' }} className="flex-shrink-0 bg-[#14171C] border border-white/5 rounded-2xl p-5 shadow-2xl relative overflow-hidden group">
@@ -650,9 +677,9 @@ export default function Dashboard() {
 
             {/* Horizon */}
             <div data-tour="horizon" style={{ animation: 'fadeSlideUp 0.5s ease-out both', animationDelay: '80ms' }} className="flex-shrink-0 bg-[#14171C] border border-white/5 rounded-2xl p-5 shadow-2xl relative overflow-hidden group">
-              <h2 className="text-sm font-semibold text-white tracking-wide mb-1">Horizon</h2>
+              <h2 className="text-sm font-semibold text-white tracking-wide mb-1">Forecast Horizon</h2>
               <p className="text-[11px] text-slate-400 mb-4 leading-relaxed pr-4">
-                Shows the latest forecast made at least {horizon} hours before target.
+                How far ahead was the forecast made? A <strong className="text-slate-300">1h</strong> forecast is highly accurate; a <strong className="text-slate-300">48h</strong> forecast has far more uncertainty. Drag to see how predictive skill changes with lead time.
               </p>
               <div className="pt-6 pb-1 px-2 relative">
                 <div className="absolute -top-[10px] pointer-events-none z-10"
@@ -681,11 +708,15 @@ export default function Dashboard() {
             <div style={{ animation: 'fadeSlideUp 0.5s ease-out both', animationDelay: '120ms' }} className="flex-shrink-0 bg-[#14171C] border border-white/5 rounded-2xl p-5 shadow-2xl relative overflow-hidden group">
               <h2 className="text-sm font-semibold text-white tracking-wide mb-3">Alert Settings</h2>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-mono text-slate-500 uppercase">DEVIATION THRESHOLD (MW):</span>
-                <Input type="number" value={alertThresholdMw}
+                <span className="text-[10px] font-mono text-slate-500 uppercase" title="A banner alert fires when the most recent actual generation deviates from the forecast by more than this amount. Lower values = more sensitive alerts.">Deviation Alert Threshold (MW)</span>
+                <Input
+                  type="number"
+                  value={alertThresholdMw}
                   onChange={(e) => setAlertThresholdMw(e.target.value === "" ? "" : Number(e.target.value))}
                   className="bg-white/10 border-white/10 text-slate-200 h-9 font-mono text-[12px] px-3 rounded-md w-full"
+                  title="Alert fires when actual vs forecast gap exceeds this MW value"
                 />
+                <span className="text-[9px] font-mono text-slate-600 leading-relaxed">Alert fires when actual output deviates from forecast by more than this amount.</span>
               </div>
             </div>
 
@@ -860,8 +891,8 @@ export default function Dashboard() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="text-[8px] font-mono text-slate-700 uppercase tracking-widest mt-2 text-center sm:text-right lg:absolute lg:bottom-4 lg:right-8">
-                Secure Transmission Link: Operational | Elexon BMRS Insights v2.0
+              <div className="text-[8px] font-mono text-slate-700 uppercase tracking-widest mt-2 text-center sm:text-right">
+                Source: Elexon BMRS · UK National Grid ESO
               </div>
             </Card>
           </div>

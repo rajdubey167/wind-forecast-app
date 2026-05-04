@@ -23,6 +23,7 @@ import {
   HourChartCard,
   HistogramChartCard,
   ScatterChartCard,
+  RegimeChartCard,
 } from "@/components/analysis/chart-cards";
 
 type DashKpi = {
@@ -153,16 +154,30 @@ export default function AnalysisClient({
   const [loadingMsg, setLoadingMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    setLiveStartDate(startDate);
+    setLiveEndDate(endDate);
+  }, [startDate, endDate]);
+
+  useEffect(() => {
     const timer = window.setTimeout(() => setBootComplete(true), 1500);
     return () => window.clearTimeout(timer);
   }, []);
 
+  const buildLiveAnalysisHref = (nextStartDate: string, nextEndDate: string) => {
+    const params = new URLSearchParams({
+      source: "live",
+      startDate: nextStartDate,
+      endDate: nextEndDate,
+    });
+    return `/analysis?${params.toString()}`;
+  };
+
   const kpiCards: DashKpi[] = [
-    { label: "Mean Abs Error", rawValue: viewModel.kpis.mae, suffix: " MW", decimals: 0, icon: Activity, color: "text-cyan-400", accentFrom: "from-cyan-500", accentTo: "to-cyan-500/0" },
-    { label: "Median Abs Error", rawValue: viewModel.kpis.medae, suffix: " MW", decimals: 0, icon: Target, color: "text-emerald-400", accentFrom: "from-emerald-500", accentTo: "to-emerald-500/0" },
-    { label: "P99 Abs Error", rawValue: viewModel.kpis.p99, suffix: " MW", decimals: 0, icon: AlertTriangle, color: "text-amber-400", accentFrom: "from-amber-500", accentTo: "to-amber-500/0", hasDot: true },
-    { label: "RMSE", rawValue: viewModel.kpis.rmse, suffix: " MW", decimals: 0, icon: TrendingDown, color: "text-violet-400", accentFrom: "from-violet-500", accentTo: "to-violet-500/0" },
-    { label: "Overforecast Bias", rawValue: viewModel.biasStats.biasPct, suffix: " %", decimals: 1, icon: Target, color: "text-rose-400", accentFrom: "from-rose-500", accentTo: "to-rose-500/0" },
+    { label: "Mean Error (MAE)",       rawValue: viewModel.kpis.mae,          suffix: " MW", decimals: 0, icon: Activity,      color: "text-cyan-400",   accentFrom: "from-cyan-500",   accentTo: "to-cyan-500/0" },
+    { label: "Typical Error (MedAE)",  rawValue: viewModel.kpis.medae,        suffix: " MW", decimals: 0, icon: Target,        color: "text-emerald-400", accentFrom: "from-emerald-500", accentTo: "to-emerald-500/0" },
+    { label: "Worst 1% Error (P99)",   rawValue: viewModel.kpis.p99,          suffix: " MW", decimals: 0, icon: AlertTriangle, color: "text-amber-400",  accentFrom: "from-amber-500",  accentTo: "to-amber-500/0" },
+    { label: "Forecast RMSE",          rawValue: viewModel.kpis.rmse,         suffix: " MW", decimals: 0, icon: TrendingDown,  color: "text-violet-400", accentFrom: "from-violet-500", accentTo: "to-violet-500/0" },
+    { label: "Over-forecast Rate",     rawValue: viewModel.biasStats.biasPct, suffix: " %",  decimals: 1, icon: Target,        color: "text-rose-400",   accentFrom: "from-rose-500",   accentTo: "to-rose-500/0" },
   ];
 
   const scatterData = useMemo(() => {
@@ -225,7 +240,7 @@ export default function AnalysisClient({
               Forecast Error Analysis
             </h1>
             <p className="text-slate-500 font-sans text-[11px] mt-1">
-              Error Characteristics - January 2024 BMRS Data
+              Error Characteristics · Where & why the forecast misses
             </p>
           </div>
           <div className="flex items-center gap-2 no-print">
@@ -255,7 +270,7 @@ export default function AnalysisClient({
               href="/"
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-slate-300 hover:bg-white/10 hover:border-cyan-500/30 transition-all font-mono"
             >
-              <ArrowLeft size={14} /> Dashboard
+              <ArrowLeft size={14} /> Back to Dashboard (Inputs)
             </Link>
           </div>
         </header>
@@ -302,9 +317,7 @@ export default function AnalysisClient({
                 onClick={() => {
                   setLoadingMsg("Fetching Live BMRS Data...");
                   startTransition(() =>
-                    router.push(
-                      `/analysis?source=live&startDate=${startDate}&endDate=${endDate}`
-                    )
+                    router.push(buildLiveAnalysisHref(liveStartDate, liveEndDate))
                   );
                 }}
                 className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-mono transition-all border ${
@@ -325,9 +338,7 @@ export default function AnalysisClient({
                   e.preventDefault();
                   setLoadingMsg("Fetching Live BMRS Data...");
                   startTransition(() => {
-                    router.push(
-                      `/analysis?source=live&startDate=${liveStartDate}&endDate=${liveEndDate}`
-                    );
+                    router.push(buildLiveAnalysisHref(liveStartDate, liveEndDate));
                     router.refresh();
                   });
                 }}
@@ -368,7 +379,7 @@ export default function AnalysisClient({
                   onClick={() => {
                     setLoadingMsg("Refreshing current live window...");
                     startTransition(() => {
-                      router.push(`/analysis?source=live&startDate=${startDate}&endDate=${endDate}`);
+                      router.push(buildLiveAnalysisHref(liveStartDate, liveEndDate));
                       router.refresh();
                     });
                   }}
@@ -385,6 +396,27 @@ export default function AnalysisClient({
 
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 shrink-0">
           {kpiCards.map((kpi, index) => <AnimatedDashKpi key={kpi.label} kpi={kpi} delay={120 + index * 70} />)}
+        </div>
+
+        {/* BIAS NARRATIVE */}
+        <div
+          style={{ animation: "fadeSlideUp 0.65s ease-out both", animationDelay: "230ms" }}
+          className="bg-[#14171C]/60 border border-white/5 rounded-xl px-5 py-3.5 flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4 shrink-0"
+        >
+          <span className="text-[9px] font-mono text-slate-600 uppercase tracking-widest shrink-0 pt-0.5">Forecast Behaviour</span>
+          <p className="text-[12px] text-slate-300 leading-relaxed">
+            {viewModel.biasStats.biasPct >= 50
+              ? <>The model <strong className="text-amber-400">over-forecast {viewModel.biasStats.biasPct.toFixed(0)}%</strong> of the time</>
+              : <>The model <strong className="text-emerald-400">under-forecast {(100 - viewModel.biasStats.biasPct).toFixed(0)}%</strong> of the time</>}
+            {" "}with a mean bias of{" "}
+            <strong className={viewModel.biasStats.biasMw >= 0 ? "text-amber-400" : "text-emerald-400"}>
+              {viewModel.biasStats.biasMw >= 0 ? "+" : ""}{viewModel.biasStats.biasMw.toFixed(0)} MW
+            </strong>
+            {viewModel.biasStats.biasMw >= 0
+              ? " — the model systematically over-estimates generation."
+              : " — the model systematically under-estimates generation."}{" "}
+            The charts below break this down by lead time and hour of day.
+          </p>
         </div>
 
         <div className="relative">
@@ -412,15 +444,25 @@ export default function AnalysisClient({
 
           <Card style={{ animation: `fadeSlideUp 0.65s ease-out both`, animationDelay: "380ms" }} className="reveal-smooth bg-[#14171C]/40 border-white/5 rounded-2xl p-5 shadow-2xl">
             <CardTitle className="text-base text-white tracking-tight mb-1">
+              Error by Wind Regime
+            </CardTitle>
+            <p className="text-[10px] font-mono text-slate-500 uppercase mb-4">
+              Simulated offshore vs onshore characteristics
+            </p>
+            <RegimeChartCard data={viewModel.regimeData} isAnimationActive={!printMode} animationBegin={440} />
+          </Card>
+
+          <Card style={{ animation: `fadeSlideUp 0.65s ease-out both`, animationDelay: "440ms" }} className="reveal-smooth bg-[#14171C]/40 border-white/5 rounded-2xl p-5 shadow-2xl">
+            <CardTitle className="text-base text-white tracking-tight mb-1">
               Error Distribution
             </CardTitle>
             <p className="text-[10px] font-mono text-slate-500 uppercase mb-4">
               Histogram of (Forecast - Actual) errors
             </p>
-            <HistogramChartCard data={viewModel.histogramData} isAnimationActive={false} animationBegin={0} />
+            <HistogramChartCard data={viewModel.histogramData} isAnimationActive={!printMode} animationBegin={500} />
           </Card>
 
-          <Card style={{ animation: `fadeSlideUp 0.65s ease-out both`, animationDelay: "440ms" }} className="reveal-smooth bg-[#14171C]/40 border-white/5 rounded-2xl p-5 shadow-2xl flex flex-col">
+          <Card style={{ animation: `fadeSlideUp 0.65s ease-out both`, animationDelay: "500ms" }} className="reveal-smooth bg-[#14171C]/40 border-white/5 rounded-2xl p-5 shadow-2xl flex flex-col lg:col-span-2">
             <CardTitle className="text-base text-white tracking-tight mb-1">
               Forecast vs Actual Correlation
             </CardTitle>
@@ -430,7 +472,7 @@ export default function AnalysisClient({
             <ScatterChartCard data={scatterData} isAnimationActive={false} animationBegin={0} />
           </Card>
 
-          <Card style={{ animation: `fadeSlideUp 0.65s ease-out both`, animationDelay: "500ms" }} className="reveal-smooth bg-[#14171C]/40 border-white/5 rounded-2xl p-5 shadow-2xl flex flex-col">
+          <Card style={{ animation: `fadeSlideUp 0.65s ease-out both`, animationDelay: "560ms" }} className="reveal-smooth bg-[#14171C]/40 border-white/5 rounded-2xl p-5 shadow-2xl flex flex-col">
             <CardTitle className="text-base text-white tracking-tight mb-1">
               Reliable Wind Capacity
             </CardTitle>
@@ -462,7 +504,6 @@ export default function AnalysisClient({
                       </div>
                     </div>
                   ))}
-
                   <div className="mt-auto pt-3 border-t border-white/5">
                     <p className="text-[10px] font-mono text-slate-500 leading-relaxed">
                       <span className="text-amber-400 font-bold">Recommendation:</span>{" "}

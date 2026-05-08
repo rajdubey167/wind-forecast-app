@@ -497,34 +497,40 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <div
               data-tour="source-toggle"
-              className="flex items-center gap-1 rounded-xl bg-white/5 border border-white/10 p-1"
+              className="flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 p-1"
               title="Switch between bundled static dataset and live BMRS API"
             >
               <button
                 type="button"
                 onClick={() => switchDataSource(false)}
                 data-testid="source-static"
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-mono uppercase tracking-wider transition-all border ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-left transition-all border ${
                   !useApi
-                    ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-200"
-                    : "bg-transparent border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                    ? "bg-cyan-500/15 border-cyan-500/30"
+                    : "bg-transparent border-transparent hover:bg-white/5"
                 }`}
               >
-                <Database size={14} />
-                Static
+                <Database size={16} className={!useApi ? "text-cyan-400" : "text-slate-400"} />
+                <div className="flex flex-col">
+                  <span className={`text-[11px] font-mono uppercase tracking-wider ${!useApi ? "text-cyan-200" : "text-slate-400"}`}>Static</span>
+                  <span className={`text-[9px] ${!useApi ? "text-cyan-400/80" : "text-slate-500"} leading-tight`}>Bundled Data</span>
+                </div>
               </button>
               <button
                 type="button"
                 onClick={() => switchDataSource(true)}
                 data-testid="source-live"
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-mono uppercase tracking-wider transition-all border ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-left transition-all border ${
                   useApi
-                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-200"
-                    : "bg-transparent border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                    ? "bg-emerald-500/15 border-emerald-500/30"
+                    : "bg-transparent border-transparent hover:bg-white/5"
                 }`}
               >
-                <Wifi size={14} />
-                Live
+                <Wifi size={16} className={useApi ? "text-emerald-400" : "text-slate-400"} />
+                <div className="flex flex-col">
+                  <span className={`text-[11px] font-mono uppercase tracking-wider ${useApi ? "text-emerald-200" : "text-slate-400"}`}>Live</span>
+                  <span className={`text-[9px] ${useApi ? "text-emerald-400/80" : "text-slate-500"} leading-tight`}>BMRS API</span>
+                </div>
               </button>
             </div>
             {useApi && latestActualTime && (

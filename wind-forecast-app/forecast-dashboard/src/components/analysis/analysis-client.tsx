@@ -304,14 +304,17 @@ export default function AnalysisClient({
                   setLoadingMsg("Loading Static Dataset...");
                   startTransition(() => router.push("/analysis?source=static"));
                 }}
-                className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-mono transition-all border ${
+                className={`flex items-center gap-2.5 px-4 py-2 rounded-2xl text-left transition-all border ${
                   source === "static"
-                    ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-300"
-                    : "bg-[#0B0D11] border-white/5 text-slate-400 hover:border-white/10"
+                    ? "bg-cyan-500/15 border-cyan-500/30"
+                    : "bg-[#0B0D11] border-white/5 hover:border-white/10"
                 }`}
               >
-                <Database size={16} />
-                <span className="text-[11px] uppercase tracking-wider font-semibold">Static Analysis</span>
+                <Database size={18} className={source === "static" ? "text-cyan-400" : "text-slate-400"} />
+                <div className="flex flex-col">
+                  <span className={`text-[11px] font-mono uppercase tracking-wider font-semibold ${source === "static" ? "text-cyan-200" : "text-slate-400"}`}>Static</span>
+                  <span className={`text-[10px] ${source === "static" ? "text-cyan-400/80" : "text-slate-500"} leading-tight`}>Bundled Data</span>
+                </div>
               </button>
               <button
                 onClick={() => {
@@ -320,14 +323,17 @@ export default function AnalysisClient({
                     router.push(buildLiveAnalysisHref(liveStartDate, liveEndDate))
                   );
                 }}
-                className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-mono transition-all border ${
+                className={`flex items-center gap-2.5 px-4 py-2 rounded-2xl text-left transition-all border ${
                   source === "live"
-                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
-                    : "bg-[#0B0D11] border-white/5 text-slate-400 hover:border-white/10"
+                    ? "bg-emerald-500/15 border-emerald-500/30"
+                    : "bg-[#0B0D11] border-white/5 hover:border-white/10"
                 }`}
               >
-                <Wifi size={16} />
-                <span className="text-[11px] uppercase tracking-wider font-semibold">Live BMRS Analysis</span>
+                <Wifi size={18} className={source === "live" ? "text-emerald-400" : "text-slate-400"} />
+                <div className="flex flex-col">
+                  <span className={`text-[11px] font-mono uppercase tracking-wider font-semibold ${source === "live" ? "text-emerald-200" : "text-slate-400"}`}>Live</span>
+                  <span className={`text-[10px] ${source === "live" ? "text-emerald-400/80" : "text-slate-500"} leading-tight`}>BMRS API</span>
+                </div>
               </button>
             </div>
 
